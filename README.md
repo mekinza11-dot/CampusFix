@@ -36,9 +36,6 @@ CampusFix helps students report campus problems and check the status of their co
 
 ![CampusFix Demo](screenshots/campusfix-demo.png)
 
-### n8n Workflow
-
-![CampusFix n8n Workflow](screenshots/campusfix-workflow.png)
 
 ### Supabase Database
 
