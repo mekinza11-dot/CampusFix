@@ -1,0 +1,1177 @@
+{
+  "name": "CampusFix AI agent",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        256,
+        304
+      ],
+      "id": "fdb54122-2cbc-4d45-9951-634d2e6646b8",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "70212375-51f7-4631-848e-6769d616e203",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "RequestType: NewComplaint",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        656,
+        16
+      ],
+      "id": "8b6787aa-dd5f-4be8-90ad-a221b847b666",
+      "name": "New IF"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "complaints",
+        "returnAll": true,
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": []
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        -48
+      ],
+      "id": "0af92fb7-0f8c-45c8-9115-88afd9af8402",
+      "name": "Duplicate Check",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6973d262-b176-4862-b5e2-3a77f6e77208",
+              "leftValue": "={{ ($json.id || '').toString() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        864,
+        368
+      ],
+      "id": "3334b556-837c-4036-8ffc-25a3fce450b8",
+      "name": "Status Check"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "complaints",
+        "limit": 10,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.output.match(/ComplaintID:\\s*(\\d+)/)?.[1] || '0' }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        688,
+        368
+      ],
+      "id": "0293a7b0-3e8f-4ef5-97bd-7364c1f151ba",
+      "name": "Status Lookup",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11182edf-c912-477d-9f92-c5079ff49785",
+              "name": "output",
+              "value": "=Your complaint has been submitted successfully. Your complaint ID is #{{ $json.id }} and its status is {{ $json.status }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2240,
+        64
+      ],
+      "id": "e2fb7367-b835-42fb-ab98-a5058cf46983",
+      "name": "Success Response",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4e2002b2-124b-4c42-995e-735b680f022d",
+              "name": "output",
+              "value": "=Your complaint #{{ $json.id }} is currently marked as {{ $json.status }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1280,
+        352
+      ],
+      "id": "d4afe879-bc88-4ea8-9ff0-e3cd59d48b63",
+      "name": "Status Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "cfe24c17-5353-42b0-bb3a-ccf575fc4142",
+              "name": "output",
+              "value": "=Sorry, I couldn't find a complaint with ID #{{ $('CampusFix AI Agent').item.json.output.match(/ComplaintID:\\s*(\\d+)/)?.[1] }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1072,
+        416
+      ],
+      "id": "5d5cda38-6fa2-49d6-8818-3cbaa01cc9dc",
+      "name": "Not Found Response"
+    },
+    {
+      "parameters": {
+        "tableId": "=complaints",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "issue",
+              "fieldValue": "={{ $('CampusFix AI Agent').item.json.output.match(/Issue:\\s*(.*)/)?.[1]?.trim() }}"
+            },
+            {
+              "fieldId": "category",
+              "fieldValue": "={{ $('CampusFix AI Agent').item.json.output.match(/Category:\\s*(.*)/)?.[1]?.trim() }}"
+            },
+            {
+              "fieldId": "location",
+              "fieldValue": "={{ $('CampusFix AI Agent').item.json.output.match(/Location:\\s*(.*)/)?.[1]?.trim() }}"
+            },
+            {
+              "fieldId": "impact",
+              "fieldValue": "={{ $('CampusFix AI Agent').item.json.output.match(/Impact:\\s*(.*)/)?.[1]?.trim() }}"
+            },
+            {
+              "fieldId": "priority",
+              "fieldValue": "={{ $('CampusFix AI Agent').item.json.output.match(/Priority:\\s*(.*)/)?.[1]?.trim() }}"
+            },
+            {
+              "fieldId": "department",
+              "fieldValue": "={{ $('CampusFix AI Agent').item.json.output.match(/Department:\\s*(.*)/)?.[1]?.trim() }}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "=Submitted"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2064,
+        64
+      ],
+      "id": "ba6510ca-c824-49c9-857d-73d1b5372198",
+      "name": "Create Complaint",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You  are CampusFix, an AI-powered smart campus problem reporting assistant.\n\nYour job is to analyze campus problems reported by students and organize the information.\n\nFor every complaint, identify the following:\n\n1. Issue – What is the actual problem?\n2. Category – What type of campus problem is it?\n3. Location – Where is the problem?\n4. Impact – Who or what is affected?\n5. Priority – Recommend High, Medium, or Low.\n6. Department – Suggest the department responsible for handling the problem.\n\nUse the student's own information. Do not invent information that the student did not provide.\n\nIf important information is missing, ask the student for that information instead of guessing.\n\nFor example, if the student says:\n\"The Wi-Fi isn't working.\"\n\nand no location is provided, ask:\n\"Which classroom, lab, or area has the Wi-Fi problem?\"\n\nBe helpful, clear, and concise.\n\nCampusFix complaint statuses are:\nSubmitted → Under Review → In Progress → Resolved.\n\nThe purpose of the system is to help organize campus complaints and connect them with the appropriate priority and responsible department.lpful assistant\n\nIMPORTANT:\nDo not assume, infer, or add facts that the student did not state.\n\nFor Impact, only use information explicitly provided by the student.\n\nDo not invent risks, causes, affected equipment, building names, or other details.\n\nFor Priority, base the recommendation only on the information provided by the student. If the student does not provide enough information to determine priority, use Medium. Do not ask for impact information just to determine priority.\n\nDo not ask for extra details unless they are necessary to properly process the complaint.\n\nDo not request additional information when all required fields can already be identified from the complaint.\n\nComputer Lab 2 is considered a sufficient location by itself. Do not ask for a building name unless the student specifically says the location is unclear or cannot be identified.\n\nOnly ask a follow-up question when an important required field is genuinely missing.\n\nImpact is not required to submit a complaint. If the student does not mention the impact, write exactly:\nNot provided\n\nDo not ask the student who is affected unless the impact is necessary to understand the actual problem.\n\nOUTPUT RULES:\nIssue Formatting Rule: Always write the Issue in lowercase. Use concise wording, such as lights not working, fan not working, or projector not working.\n\n\nKeep each field short and clean.\n\nDo not add explanations inside the field values.\n\nFor Impact, if the student does not provide an impact, write exactly:\nNot provided\n\nFor Priority, write only one of:\nHigh\nMedium\nLow\n\nDo not write reasons or explanations after the priority.\n\nFor Status, always write exactly:\nSubmitted\n\nDo not write \"Submit\", \"Submitted successfully\", or any other variation.\n\nFor Category and Department, give only the category or department name without explanations.\n\nEXCEPTION FOR MISSING INFORMATION:\n\nWhen required information is missing, do not use the normal complaint format.\n\nInstead output only:\n\nRequestType: NewComplaint\nMissingInformation: [missing field]\nResponse: [clear, natural, and friendly follow-up question]\n\nThe Response must sound conversational and natural, like a helpful campus assistant. Do not use parentheses, awkward phrases, or unnecessary wording.\n\nFor missing information, the Response must be a short, natural question.\n\nDo not use parentheses.\nDo not use brackets.\nDo not give multiple alternatives in the same question.\nDo not say \"provide the building and floor\".\nDo not repeat the missing field unnecessarily.\n\nExample:\n\nStudent:\n\"The washroom tap is broken.\"\n\nOutput:\nRequestType: NewComplaint\nMissingInformation: Location\nResponse: Which washroom is the broken tap in?\n\nAsk only for the missing information using one short, natural question. Keep the question simple and conversational.\nFINAL OUTPUT FORMAT:\n\nAlways output the complaint using exactly this format:\n\nIssue: [issue]\nCategory: [category]\nLocation: [location]\nImpact: [impact]\nPriority: [High/Medium/Low]\nDepartment: [department]\nStatus: Submitted\n\nDo not use numbers.\nDo not use bold formatting (**).\nDo not add explanations before or after the fields.\n\nMISSING INFORMATION RULE:\n\nBefore submitting a complaint, check whether the user has provided enough information.\n\nIf important information is missing, do not create or submit the complaint.\nInstead, ask the user a clear follow-up question to get the missing information.\n\nImportant information may include:\n- Building\n- Floor\n- Specific location such as classroom, lab, office, or washroom\n- The actual problem\n- Impact of the problem\n\nAsk only for the information that is missing.\n\nIf all necessary information is available, continue with the normal complaint format and set Status to Submitted.\n\n\nA room number, classroom number, lab name, office name, or area is sufficient as a location.\nFor example, if the user says \"Room 5\", accept \"Room 5\" as the location.\nDo not ask for the building name if a room, lab, classroom, office, or area has already been provided.\n\n\nREQUEST TYPE:\n\nIdentify whether the user is reporting a new complaint or asking about an existing complaint.\n\nFor a new problem or issue, process it as a new complaint.\n\nFor questions about an existing complaint, its status, progress, or whether it has been resolved, treat it as a status-check request.\n\nDo not create a new complaint when the user is only asking about an existing complaint.\n\nOUTPUT REQUEST TYPE:\n\nFor a new complaint, include this line:\nRequestType: NewComplaint\n\nIf a new complaint is missing required information and you need to ask the student a follow-up question, still include:\nRequestType: NewComplaint\n\nThen include:\nMissingInformation: [missing field]\nResponse: [follow-up question]\n\nFor a user asking about an existing complaint, include this line:\nRequestType: StatusCheck\n\nFor a StatusCheck, do not generate the normal complaint fields.\n\n\nStatus Update:\n\nIf the user wants to change or update the status of an existing complaint, use:\n\nRequestType: StatusUpdate\nComplaintID: [ID]\nNewStatus: [status]\n\nAllowed status values are only:\n- Submitted\n- Under Review\n- In Progress\n- Resolved\n\nIf the user requests a status that is not in this list, ask them to choose one of the allowed statuses.\n\nDo not create a new complaint when the user is requesting a status update.\n\nSTATUS CHECK DETAILS:\n\nIf the user is asking about an existing complaint and provides a complaint ID, extract the ID.\n\nFor a status check with a complaint ID, output:\n\nRequestType: StatusCheck\nComplaintID: [ID]\n\nIf the user asks for a status but does not provide a complaint ID, ask:\n\"Please provide your complaint ID so I can check its status.\"\n\nDo not create a new complaint for a StatusCheck.\n\n\nWELCOME MESSAGE:\n\nIf the user only greets CampusFix or asks what CampusFix can do, do not generate complaint fields.\n\nReply with:\n\nWelcome to CampusFix! 👋\nI can help you report a campus problem or check the status of an existing complaint.\nHow can I help you today?\n\nFor normal complaints and status checks, continue using all the existing rules above.\n\n\nCONSISTENCY RULE:\n\nAlways use the following standard categories and departments:\n\nCategories:\n- IT & Technology\n- Electrical\n- HVAC\n- Plumbing\n- Furniture\n- Cleaning\n- Security\n- Other\n\nDepartments:\n- IT Support\n- Facilities Management\n- Maintenance\n- Security\n- Housekeeping\n\nChoose the category and department that best match the complaint.\nDo not create new category or department names outside these lists.\n\n\nPicture Complaint Rule:\n\nIf the user uploads a picture of a campus problem, use the picture as additional information to understand the complaint.\n\nDo not ignore the user's written message when a picture is uploaded.\n\nUse the picture to help identify visible details such as:\n- damaged equipment\n- broken furniture\n- leaks\n- electrical problems\n- cleanliness problems\n- visible building damage\n\nIf the picture does not provide enough information to determine the problem, ask the user for the missing information.\n\nContinue using the existing CampusFix rules for:\nIssue, Category, Location, Impact, Priority, Department, and Status.\n\nA picture alone does not provide the location, impact, or priority unless these are clearly known from the picture or the user's message.\n\nDo not invent information that cannot be determined from the picture or the user's message.\n\n\nResolution Verification Rule:\n\nIf the user wants to verify whether an existing complaint has been resolved, use:\n\nRequestType: ResolutionVerification\nComplaintID: [ID]\n\nA resolution verification may include a picture showing the current condition of the problem.\n\nUse the uploaded picture as additional evidence when available.\n\nDo not claim that a complaint is resolved only because a picture was uploaded. Use the picture and the user's message to determine whether there is enough evidence to support resolution.\n\nIf the complaint ID is missing, ask the user to provide the complaint ID.\n\nDo not create a new complaint for a resolution verification request.\n\n\n\nResolution Verification Request:\n\nIf the user says they want to verify, confirm, check whether fixed, or confirm resolution of an existing complaint, classify the request as:\n\nRequestType: ResolutionVerification\nComplaintID: [ID]\n\nDo not classify a resolution verification request as StatusCheck.\n\nIf the complaint ID is missing, ask the user to provide it.\n\nDo not create a new complaint.\n\n\nDuplicate Detection Consistency:\n\nWhen identifying the Issue, use a short, consistent description of the actual problem.\n\nUse the same wording for the same type of problem whenever possible.\n\nFor example:\n\"Water tap is leaking\"\n\"Leaking water tap\"\n\"The tap is leaking water\"\n\nshould all use:\n\"Water tap leaking\"\n\nDo not include unnecessary words such as \"the\", \"is\", \"not working\", or \"there is\" when they do not change the meaning of the issue.\n\nFor projector complaints, use the exact Issue wording projector is not working."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        160,
+        0
+      ],
+      "id": "f041a812-7bb8-4730-9f17-186186c1544e",
+      "name": "CampusFix AI Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "options": {
+          "allowFileUploads": true,
+          "allowedFilesMimeTypes": "image/*",
+          "responseMode": "lastNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d0de2c02-506d-4afe-a363-c0ca2ea0931c",
+      "name": "CampusFix Chat Trigger",
+      "webhookId": "23dd2895-8ffa-4af3-9de3-ecd7d5fb5c89"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1f0c9072-0657-4ab2-969d-3c7185758b1e",
+              "leftValue": "={{ ($json.id || '').toString() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1248,
+        32
+      ],
+      "id": "f5b4faf1-9d65-4575-becf-5452c3f42bf9",
+      "name": "Status Update Check"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5e6efded-0449-41d9-8df7-7dd405d47858",
+              "name": "text",
+              "value": "=Your complaint #{{ $json.id }} has been updated successfully. Its new status is {{ $json.status }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1552,
+        96
+      ],
+      "id": "688bd128-8938-4601-894a-5849bdd75e84",
+      "name": "Status Update Response"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e9fc4404-fb0c-4dc9-b529-7ae7d4a14940",
+              "name": "text",
+              "value": "=Sorry, I couldn't find a complaint with ID #{{ $('CampusFix AI Agent').item.json.output.match(/ComplaintID:\\s*(\\d+)/)?.[1] }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1552,
+        240
+      ],
+      "id": "120a9852-0aaf-4df8-8ed4-d70efce5be96",
+      "name": "Status Update Not Found"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "complaints",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.output.match(/ComplaintID:\\s*(\\d+)/)?.[1] }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "={{ $json.output.match(/NewStatus:\\s*(.*)/)?.[1]?.trim() }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        32
+      ],
+      "id": "3fe0f72a-e017-45d3-9872-37a90ebc9367",
+      "name": "Update Complaint Status",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "6d67d401-4726-41b8-b71c-91f79e4af96d",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "RequestType: StatusUpdate",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "a52d4e91-788b-43b1-a854-969b41237ec3",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "NewStatus:",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        832,
+        96
+      ],
+      "id": "8cbb80d4-75ff-4430-8fb4-85768e9e540e",
+      "name": "Status Update IF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a9dbd0dc-5a6b-41de-b2fd-94d5f1012671",
+              "leftValue": "={{ $json.isDuplicate.toString() }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1888,
+        -48
+      ],
+      "id": "0c6b68aa-96f3-4eb3-950d-a6a73792006c",
+      "name": "Duplicate Check IF"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "68724da0-dda8-4e0f-a2d8-83a7f831d6f5",
+              "name": "output",
+              "value": "=This complaint has already been reported. Your existing complaint ID is #{{ $json.id }}. Please check the status using complaint ID #{{ $json.id }}.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2080,
+        -96
+      ],
+      "id": "96499c48-2839-4061-9b9d-8b8b60fc6de1",
+      "name": "Duplicate Response1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1984,
+        240
+      ],
+      "id": "68872fa9-e229-4098-917e-f02d703f6b8b",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11182edf-c912-477d-9f92-c5079ff49785",
+              "name": "output",
+              "value": "=Complaint #{{ $json.id }} has been resolved and verified.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2192,
+        224
+      ],
+      "id": "d5a7f441-adad-464a-8324-862f1c652227",
+      "name": "Resolution Verification Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "21565b39-6652-47a5-af84-bffff50ea015",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "Welcome to CampusFix!",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        0
+      ],
+      "id": "b890b347-bd9f-43a1-a13f-805fa8e54409",
+      "name": "Welcome IF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "fa03803c-225a-442b-899d-9f04badda492",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "MissingInformation:",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        848,
+        -48
+      ],
+      "id": "4c8cf709-af3c-4d15-a21c-e098231762a0",
+      "name": "Missing Information IF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "31b72df7-29ea-4548-b4aa-01eb80ff6c92",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "RequestType: StatusCheck",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "c5810582-efcc-44ce-b3b1-c9dfbce33bcb",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "ComplaintID:",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1024,
+        192
+      ],
+      "id": "41f46ae2-7376-4a7b-ba31-ff7e1a4d153f",
+      "name": "Status Check IF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2e0d1867-a264-455a-96df-b9512be82ce7",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "RequestType: ResolutionVerification",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        400
+      ],
+      "id": "035cdc34-3122-4219-bd31-1671cafff371",
+      "name": "Resolution Verification IF"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ccbba30a-2301-4e51-93d5-46d35bc3dd7f",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "RequestType: ResolutionVerification",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "e9ffa424-0523-43db-9a90-3f26122f745b",
+              "leftValue": "={{ $json.output || '' }}",
+              "rightValue": "ComplaintID:",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1216,
+        208
+      ],
+      "id": "0b9acf10-4752-4d8b-acb1-22ae8f617f64",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        160
+      ],
+      "id": "b5dc3a8c-c7f5-4e7f-9ad6-d27e722cab56",
+      "name": "OpenAI Chat Model"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4f1c4b5a-1b33-4f2d-8379-0f8527724950",
+              "name": "text",
+              "value": "={{ 'Complaint #' + $json.id + ' is currently ' + $json.status + '. It cannot be verified as resolved yet.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2192,
+        400
+      ],
+      "id": "3d202f34-259c-49b2-8bee-712f14836281",
+      "name": "Resolution Not Verified"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0ff50faf-027d-4d2a-b985-65bba3bdd106",
+              "name": "text",
+              "value": "={{ $json.output.match(/Response:\\s*(.*)/)?.[1]?.trim() || $json.output.trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1536,
+        -192
+      ],
+      "id": "1ac46dbb-5fe3-40c4-9678-f61bbe9b2c89",
+      "name": "Missing Info Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst issue = $('CampusFix AI Agent').first().json.output\n  .match(/Issue:\\s*(.*)/)?.[1]?.trim().toLowerCase();\n\nconst location = $('CampusFix AI Agent').first().json.output\n  .match(/Location:\\s*(.*)/)?.[1]?.trim().toLowerCase();\n\nconst duplicate = items.find(item => {\n  const dbIssue = (item.json.issue || '').trim().toLowerCase();\n  const dbLocation = (item.json.location || '').trim().toLowerCase();\n\n  return dbIssue === issue && dbLocation === location;\n});\n\nif (duplicate) {\n  return [{\n    json: {\n      ...duplicate.json,\n      isDuplicate: true\n    }\n  }];\n}\n\nreturn [{\n  json: {\n    isDuplicate: false\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        -48
+      ],
+      "id": "27a0a936-930c-4319-a2be-530ee1add2ed",
+      "name": "Duplicate Data Formatter"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3b7ba062-797f-4bfe-84c6-350d6b7bbc21",
+              "leftValue": "={{ $json.status || '' }}",
+              "rightValue": "Resolved",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1984,
+        384
+      ],
+      "id": "fd753f5c-e383-4c92-a549-a82b1c8fe674",
+      "name": "Resolution Complaint Found IF"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "complaints",
+        "limit": 1,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.output.match(/ComplaintID:\\s*(\\d+)/)?.[1] || '0' }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        384
+      ],
+      "id": "7ff15245-d6b5-49d5-82fc-8a6e6b6d7482",
+      "name": "Resolution Complaint Lookup"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "CampusFix AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New IF": {
+      "main": [
+        [
+          {
+            "node": "Missing Information IF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status Update IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Check": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Data Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Check": {
+      "main": [
+        [
+          {
+            "node": "Status Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Lookup": {
+      "main": [
+        [
+          {
+            "node": "Status Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Complaint": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CampusFix AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Welcome IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CampusFix Chat Trigger": {
+      "main": [
+        [
+          {
+            "node": "CampusFix AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Update Check": {
+      "main": [
+        [
+          {
+            "node": "Status Update Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status Update Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Complaint Status": {
+      "main": [
+        [
+          {
+            "node": "Status Update Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Update IF": {
+      "main": [
+        [
+          {
+            "node": "Update Complaint Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status Check IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Check IF": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Complaint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Resolution Verification Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Welcome IF": {
+      "main": [
+        [],
+        [
+          {
+            "node": "New IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Missing Information IF": {
+      "main": [
+        [
+          {
+            "node": "Missing Info Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Duplicate Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Check IF": {
+      "main": [
+        [
+          {
+            "node": "Status Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolution Verification IF": {
+      "main": [
+        [
+          {
+            "node": "Resolution Complaint Lookup",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Resolution Verification IF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Missing Info Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "CampusFix AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Duplicate Data Formatter": {
+      "main": [
+        [
+          {
+            "node": "Duplicate Check IF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolution Complaint Found IF": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resolution Not Verified",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolution Complaint Lookup": {
+      "main": [
+        [
+          {
+            "node": "Resolution Complaint Found IF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "1a341fed-d110-4cda-a1c4-ce9591b08052",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "tags": []
+}
